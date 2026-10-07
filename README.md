@@ -50,21 +50,6 @@
 
 ---
 
-## Akun Demo Siap Pakai
-
-Semua akun demo menggunakan kata sandi: **`Password123!`**
-
-| Peran | Nama | Alamat Email | Hak Akses Utama |
-|---|---|---|---|
-| **Admin** | Super Administrator | `admin@itbantu.local` | Konfigurasi penuh sistem, kelola user, layanan, SLA, dan audit trail |
-| **IT Supervisor** | Bambang Supervisor | `supervisor@itbantu.local` | Supervisi tiket tim, eskalasi, penugasan staf, monitoring SLA |
-| **IT Staff** | Andi Pratama (Network) | `andi@itbantu.local` | Claim/tangani tiket jaringan, update status, internal notes, resolusi |
-| **IT Staff** | Budi Santoso (Application) | `budi@itbantu.local` | Tangani tiket aplikasi & akun, reset password, update status |
-| **User** | Fadhil Karyawan (Operations) | `fadhil@itbantu.local` | Buat tiket, pantau tiket sendiri, konfirmasi selesai, reopen tiket |
-| **User** | Siti Rahma (Finance) | `siti@itbantu.local` | Buat request akses data keuangan, kirim lampiran screenshot |
-
----
-
 ## Panduan Menjalankan Aplikasi
 
 ### 1. Prasyarat
@@ -98,19 +83,3 @@ Buka browser pada: `http://localhost:3000`
 npm run build
 npm start
 ```
-
----
-
-## Konfigurasi Environment (`.env`)
-
-```env
-DATABASE_URL="file:./dev.db"
-JWT_SECRET="itbantu-super-secret-jwt-key-2026-production-ready-64-bytes-entropy"
-TELEGRAM_BOT_TOKEN="" # Isi token dari @BotFather untuk mengaktifkan notifikasi Telegram nyata
-TELEGRAM_BOT_USERNAME="ITbantuBot"
-UPLOAD_MAX_FILE_SIZE_MB=10
-UPLOAD_DIR="./storage/attachments"
-APP_NAME="ITbantu"
-APP_URL="http://localhost:3000"
-```
-
