@@ -5,7 +5,7 @@
 
 ---
 
-## 🚀 Fitur Unggulan
+## Fitur Unggulan
 
 - **Service Catalog Komprehensif (8 Layanan Utama):**
   - Network & Internet (LAN, WiFi, VPN, Slow Bandwidth)
@@ -50,7 +50,7 @@
 
 ---
 
-## 👥 Akun Demo Siap Pakai
+## Akun Demo Siap Pakai
 
 Semua akun demo menggunakan kata sandi: **`Password123!`**
 
@@ -65,7 +65,7 @@ Semua akun demo menggunakan kata sandi: **`Password123!`**
 
 ---
 
-## 🛠️ Panduan Menjalankan Aplikasi
+## Panduan Menjalankan Aplikasi
 
 ### 1. Prasyarat
 - Node.js versi 18 atau lebih baru (direkomendasikan Node.js 20 / 24)
@@ -101,7 +101,7 @@ npm start
 
 ---
 
-## ⚙️ Konfigurasi Environment (`.env`)
+## Konfigurasi Environment (`.env`)
 
 ```env
 DATABASE_URL="file:./dev.db"
