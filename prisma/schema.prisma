@@ -1,0 +1,327 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique // USER, IT_STAFF, IT_SUPERVISOR, ADMIN
+  displayName String
+  description String?
+  permissions String?  // JSON stringified permissions array
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
+
+  @@map("roles")
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  code        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
+  tickets     Ticket[]
+
+  @@map("departments")
+}
+
+model ItTeam {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  members     User[]    @relation("TeamMembers")
+  services    Service[]
+  tickets     Ticket[]
+
+  @@map("it_teams")
+}
+
+model User {
+  id            String            @id @default(cuid())
+  name          String
+  email         String            @unique
+  passwordHash  String
+  phone         String?
+  avatarUrl     String?
+  isActive      Boolean           @default(true)
+  roleId        String
+  role          Role              @relation(fields: [roleId], references: [id])
+  departmentId  String?
+  department    Department?       @relation(fields: [departmentId], references: [id])
+  itTeamId      String?
+  itTeam        ItTeam?           @relation("TeamMembers", fields: [itTeamId], references: [id])
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  createdTickets    Ticket[]        @relation("TicketCreator")
+  assignedTickets   Ticket[]        @relation("TicketAssignee")
+  comments          TicketComment[]
+  statusHistories   TicketStatusHistory[]
+  auditLogs         TicketAuditLog[]
+  notifications     Notification[]
+  telegramAccount   TelegramAccount?
+
+  @@index([roleId])
+  @@index([departmentId])
+  @@index([itTeamId])
+  @@map("users")
+}
+
+model Service {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  icon        String?
+  sortOrder   Int        @default(0)
+  isActive    Boolean    @default(true)
+  itTeamId    String?
+  itTeam      ItTeam?    @relation(fields: [itTeamId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  categories  Category[]
+  tickets     Ticket[]
+
+  @@map("services")
+}
+
+model Category {
+  id                 String   @id @default(cuid())
+  serviceId          String
+  service            Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  name               String
+  slug               String
+  description        String?
+  defaultPriority    String   @default("NORMAL") // LOW, NORMAL, HIGH, CRITICAL
+  estimatedSlaHours  Int      @default(8)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  tickets            Ticket[]
+
+  @@unique([serviceId, slug])
+  @@map("categories")
+}
+
+model Ticket {
+  id                      String    @id @default(cuid())
+  ticketNumber            String    @unique // INC-2026-00001, REQ-2026-00002, CMP-2026-00003
+  type                    String    // INCIDENT, REQUEST, COMPLAINT
+  subject                 String
+  description             String
+  location                String    // Office / Branch / Site Location
+  contactPhone            String?
+  
+  serviceId               String
+  service                 Service   @relation(fields: [serviceId], references: [id])
+  categoryId              String
+  category                Category  @relation(fields: [categoryId], references: [id])
+  
+  userId                  String    // Creator
+  user                    User      @relation("TicketCreator", fields: [userId], references: [id])
+  
+  departmentId            String?
+  department              Department? @relation(fields: [departmentId], references: [id])
+
+  assignedTeamId          String?
+  assignedTeam            ItTeam?   @relation(fields: [assignedTeamId], references: [id])
+  assignedStaffId         String?
+  assignedStaff           User?     @relation("TicketAssignee", fields: [assignedStaffId], references: [id])
+
+  priority                String    @default("NORMAL") // LOW, NORMAL, HIGH, CRITICAL
+  status                  String    @default("OPEN")   // OPEN, ASSIGNED, IN_PROGRESS, PENDING, RESOLVED, CLOSED, REOPENED
+  
+  // SLA Timings
+  responseDueAt           DateTime?
+  respondedAt             DateTime?
+  resolutionDueAt         DateTime?
+  resolvedAt              DateTime?
+  closedAt                DateTime?
+  reopenedAt              DateTime?
+  
+  resolutionNote          String?
+  reopenReason            String?
+  pendingReason           String?
+
+  isSlaResponseBreached   Boolean   @default(false)
+  isSlaResolutionBreached Boolean   @default(false)
+
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  comments        TicketComment[]
+  attachments     TicketAttachment[]
+  statusHistories TicketStatusHistory[]
+  auditLogs       TicketAuditLog[]
+  notifications   Notification[]
+  telegramQueues  TelegramQueue[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([userId])
+  @@index([assignedStaffId])
+  @@index([assignedTeamId])
+  @@index([serviceId])
+  @@index([categoryId])
+  @@index([createdAt])
+  @@map("tickets")
+}
+
+model TicketComment {
+  id              String             @id @default(cuid())
+  ticketId        String
+  ticket          Ticket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User               @relation(fields: [userId], references: [id])
+  content         String
+  isInternalNote  Boolean            @default(false)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  attachments     TicketAttachment[]
+
+  @@index([ticketId])
+  @@index([userId])
+  @@map("ticket_comments")
+}
+
+model TicketAttachment {
+  id               String         @id @default(cuid())
+  ticketId         String
+  ticket           Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  commentId        String?
+  comment          TicketComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  originalFilename String
+  storedFilename   String         @unique
+  mimeType         String
+  fileSize         Int            // In bytes
+  storagePath      String
+  uploadedBy       String         // User ID
+  createdAt        DateTime       @default(now())
+
+  @@index([ticketId])
+  @@index([commentId])
+  @@map("ticket_attachments")
+}
+
+model TicketStatusHistory {
+  id         String   @id @default(cuid())
+  ticketId   String
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  actorId    String
+  actor      User     @relation(fields: [actorId], references: [id])
+  fromStatus String
+  toStatus   String
+  note       String?
+  createdAt  DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([actorId])
+  @@map("ticket_status_history")
+}
+
+model TicketAuditLog {
+  id          String   @id @default(cuid())
+  ticketId    String?
+  ticket      Ticket?  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  actorId     String
+  actor       User     @relation(fields: [actorId], references: [id])
+  action      String   // CREATE, UPDATE, ASSIGN, STATUS_CHANGE, COMMENT, ATTACHMENT_UPLOAD, RESOLVE, REOPEN, CLOSE
+  entityType  String   // TICKET, COMMENT, ATTACHMENT, USER, SLA
+  entityId    String
+  oldValue    String?  // JSON string
+  newValue    String?  // JSON string
+  metadata    String?  // JSON string
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([actorId])
+  @@index([action])
+  @@map("ticket_audit_logs")
+}
+
+model SlaRule {
+  id                    String   @id @default(cuid())
+  priority              String   @unique // LOW, NORMAL, HIGH, CRITICAL
+  responseTimeMinutes   Int      // e.g. 15 for CRITICAL
+  resolutionTimeMinutes Int      // e.g. 60 for CRITICAL
+  escalationLevel       Int      @default(1)
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("sla_rules")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticketId  String?
+  ticket    Ticket?  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   // TICKET_ASSIGNED, STATUS_CHANGED, NEW_COMMENT, TICKET_RESOLVED, TICKET_REOPENED, SLA_WARNING
+  isRead    Boolean  @default(false)
+  linkUrl   String
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model TelegramAccount {
+  id                     String    @id @default(cuid())
+  userId                 String    @unique
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  telegramChatId         String?   @unique
+  telegramUsername       String?
+  isVerified             Boolean   @default(false)
+  verificationCode       String?
+  verificationExpiresAt  DateTime?
+  isNotificationsEnabled Boolean   @default(true)
+  linkedAt               DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@map("telegram_accounts")
+}
+
+model TelegramQueue {
+  id              String    @id @default(cuid())
+  ticketId        String?
+  ticket          Ticket?   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  eventType       String    // TICKET_CREATED, TICKET_ASSIGNED, STATUS_CHANGED, NEW_REPLY, TICKET_RESOLVED, TICKET_REOPENED
+  recipientChatId String
+  payload         String    // JSON string containing message text, keyboard, ticketNumber, etc.
+  status          String    @default("PENDING") // PENDING, SENT, FAILED
+  attempts        Int       @default(0)
+  lastError       String?
+  createdAt       DateTime  @default(now())
+  sentAt          DateTime?
+
+  @@index([status])
+  @@map("telegram_queue")
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
