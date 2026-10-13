@@ -76,7 +76,7 @@ npm test
 ```bash
 npm run dev
 ```
-Buka browser pada: `http://localhost:3000`
+
 
 ### 6. Build Produksi
 ```bash
